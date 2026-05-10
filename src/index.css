@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for ticket stub effect */
+@layer components {
+  .ticket-stub {
+    position: relative;
+  }
+  .ticket-stub::before,
+  .ticket-stub::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: #f1f5f9;
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .ticket-stub::before {
+    left: -12px;
+  }
+  .ticket-stub::after {
+    right: -12px;
+  }
+}
