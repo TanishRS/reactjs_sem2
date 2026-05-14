@@ -3,6 +3,7 @@ import React, { useState,useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import GitEventLogo from '../GitEventLogo';
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useAuth } from "../../context/AuthContext";
 
@@ -312,26 +313,7 @@ const Shader = ({ source, uniforms, maxFps = 60 }) => {
   );
 };
 
-const AnimatedNavLink = ({
-  href,
-  children
-}) => {
-  const defaultTextColor = 'text-gray-300';
-  const hoverTextColor = 'text-white';
-  const textSizeClass = 'text-sm';
-
-  return (
-    <Link
-      to={href}
-      className={`group relative inline-block overflow-hidden h-5 flex items-center ${textSizeClass}`}>
-      <div
-        className="flex flex-col transition-transform duration-400 ease-out transform group-hover:-translate-y-1/2">
-        <span className={defaultTextColor}>{children}</span>
-        <span className={hoverTextColor}>{children}</span>
-      </div>
-    </Link>
-  );
-};
+// AnimatedNavLink removed to fix text stacking issue
 
 function MiniNavbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -362,34 +344,19 @@ function MiniNavbar() {
     };
   }, [isOpen]);
 
-  const logoElement = (
-    <div className="relative w-5 h-5 flex items-center justify-center">
-    <span
-      className="absolute w-1.5 h-1.5 rounded-full bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
-    <span
-      className="absolute w-1.5 h-1.5 rounded-full bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-    <span
-      className="absolute w-1.5 h-1.5 rounded-full bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-    <span
-      className="absolute w-1.5 h-1.5 rounded-full bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
- </div>
-  );
+  const logoElement = <GitEventLogo size={24} />;
 
   const navigate = useNavigate();
   const { login } = useAuth();
   
   const navLinksData = [
-    { label: 'Home', href: '/home' },
-    { label: 'My Tickets', href: '/my-tickets' },
-    { label: 'Hosted Events', href: '/hosted-events' },
+    { label: 'About Us', href: '/#about', anchor: true },
+    { label: 'Contact', href: '/#contact', anchor: true },
   ];
 
   const loginButtonElement = (
     <button
-      onClick={() => {
-        login('Demo User', 'student');
-        navigate('/home');
-      }}
+      onClick={() => navigate('/login')}
       className="px-4 py-2 sm:px-3 text-xs sm:text-sm border border-[#333] bg-[rgba(31,31,31,0.62)] text-gray-300 rounded-full hover:border-white/50 hover:text-white transition-colors duration-200 w-full sm:w-auto">
       LogIn
     </button>
@@ -405,10 +372,7 @@ function MiniNavbar() {
                        transition-all duration-300 ease-out
                        group-hover:opacity-60 group-hover:blur-xl group-hover:-m-3"></div>
        <button
-         onClick={() => {
-            login('Demo User', 'student');
-            navigate('/home');
-         }}
+         onClick={() => navigate('/login?signup=true')}
          className="relative z-10 px-4 py-2 sm:px-3 text-xs sm:text-sm font-semibold text-black bg-gradient-to-br from-gray-100 to-gray-300 rounded-full hover:from-gray-200 hover:to-gray-400 transition-all duration-200 w-full sm:w-auto">
          Signup
        </button>
@@ -429,11 +393,17 @@ function MiniNavbar() {
            {logoElement}
         </div>
 
-        <nav className="hidden sm:flex items-center space-x-4 sm:space-x-6 text-sm">
+        <nav className="hidden sm:flex items-center space-x-6 text-sm">
           {navLinksData.map((link) => (
-            <AnimatedNavLink key={link.href} href={link.href}>
-              {link.label}
-            </AnimatedNavLink>
+            link.anchor
+              ? <a
+                  key={link.href}
+                  href={link.href}
+                  className="text-gray-300 hover:text-white transition-colors font-medium"
+                >{link.label}</a>
+              : <Link key={link.href} to={link.href} className="text-gray-300 hover:text-white transition-colors font-medium">
+                  {link.label}
+                </Link>
           ))}
         </nav>
 
@@ -476,12 +446,17 @@ function MiniNavbar() {
                          ${isOpen ? 'max-h-[1000px] opacity-100 pt-4' : 'max-h-0 opacity-0 pt-0 pointer-events-none'}`}>
         <nav className="flex flex-col items-center space-y-4 text-base w-full">
           {navLinksData.map((link) => (
-            <Link
-              key={link.href}
-              to={link.href}
-              className="text-gray-300 hover:text-white transition-colors w-full text-center">
-              {link.label}
-            </Link>
+            link.anchor
+              ? <a key={link.href} href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className="text-gray-300 hover:text-white transition-colors w-full text-center">
+                  {link.label}
+                </a>
+              : <Link key={link.href} to={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className="text-gray-300 hover:text-white transition-colors w-full text-center">
+                  {link.label}
+                </Link>
           ))}
         </nav>
         <div className="flex flex-col items-center space-y-4 mt-4 w-full">
@@ -498,7 +473,10 @@ export const SignInPage = ({
 }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState("");
+  const [collegeId, setCollegeId] = useState("");
+  const [collegeName, setCollegeName] = useState("");
   const [step, setStep] = useState("email");
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const codeInputRefs = useRef([]);
@@ -612,7 +590,7 @@ export const SignInPage = ({
           className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-black to-transparent" />
       </div>
       {/* Content Layer */}
-      <div className="relative z-10 flex flex-col flex-1">
+      <div className="relative z-10 flex flex-col min-h-[100dvh]">
         {/* Top navigation */}
         <MiniNavbar />
 
@@ -630,23 +608,25 @@ export const SignInPage = ({
                     exit={{ opacity: 0, x: -100 }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
                     className="space-y-6 text-center">
-                    <div className="space-y-1">
+                    <div className="space-y-1 mb-8">
                       <h1
-                        className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">Welcome Developer</h1>
-                      <p className="text-[1.8rem] text-white/70 font-light">Your sign in component</p>
+                        className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">gitEvent</h1>
+                      <p className="text-[1.25rem] text-white/70 font-light">Sign in to discover, register, and host events</p>
                     </div>
                     
                     
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <button
                         type="button"
-                        onClick={() => {
-                          login('Demo User', 'student');
-                          navigate('/home');
-                        }}
+                        onClick={() => navigate('/login?signup=true')}
                         className="backdrop-blur-[2px] w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full py-3 px-4 transition-colors">
-                        <span className="text-lg">G</span>
-                        <span>Sign in with Google</span>
+                        <svg viewBox="0 0 24 24" className="w-4 h-4">
+                          <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                          <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        <span>Continue with Google</span>
                       </button>
                       
                       <div className="flex items-center gap-4">
@@ -655,31 +635,62 @@ export const SignInPage = ({
                         <div className="h-px bg-white/10 flex-1" />
                       </div>
                       
-                      <form onSubmit={handleEmailSubmit}>
-                        <div className="relative">
+                      <form onSubmit={handleEmailSubmit} className="space-y-4">
+                        <div className="space-y-3">
                           <input
                             type="email"
-                            placeholder="info@gmail.com"
+                            placeholder="student@university.edu"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full backdrop-blur-[1px] text-white border-1 border-white/10 rounded-full py-3 px-4 focus:outline-none focus:border focus:border-white/30 text-center"
+                            className="w-full backdrop-blur-[1px] text-white border border-white/10 rounded-full py-3 px-4 focus:outline-none focus:border-white/30 text-center bg-transparent"
                             required />
-                          <button
-                            type="submit"
-                            className="absolute right-1.5 top-1.5 text-white w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors group overflow-hidden">
-                            <span className="relative w-full h-full block overflow-hidden">
-                              <span
-                                className="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-full">
-                                →
-                              </span>
-                              <span
-                                className="absolute inset-0 flex items-center justify-center transition-transform duration-300 -translate-x-full group-hover:translate-x-0">
-                                →
-                              </span>
-                            </span>
-                          </button>
+                          
+                          <AnimatePresence>
+                            {isSignup && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="space-y-3 overflow-hidden"
+                              >
+                                <input
+                                  type="text"
+                                  placeholder="College ID (e.g. 2024CS01)"
+                                  value={collegeId}
+                                  onChange={(e) => setCollegeId(e.target.value)}
+                                  className="w-full backdrop-blur-[1px] text-white border border-white/10 rounded-full py-3 px-4 focus:outline-none focus:border-white/30 text-center bg-transparent"
+                                  required={isSignup} />
+                                <input
+                                  type="text"
+                                  placeholder="College Name"
+                                  value={collegeName}
+                                  onChange={(e) => setCollegeName(e.target.value)}
+                                  className="w-full backdrop-blur-[1px] text-white border border-white/10 rounded-full py-3 px-4 focus:outline-none focus:border-white/30 text-center bg-transparent"
+                                  required={isSignup} />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
+                        
+                        <button
+                          type="submit"
+                          className="w-full bg-white text-black font-semibold rounded-full py-3 hover:bg-gray-200 transition-colors">
+                          {isSignup ? "Create Account" : "Continue"}
+                        </button>
                       </form>
+                      
+                      <div className="pt-2 space-y-2 text-center">
+                        <p className="text-sm text-white/50">
+                          Don't have an account?{' '}
+                          <button
+                            type="button"
+                            onClick={() => navigate('/login?signup=true')}
+                            className="text-white hover:text-white/80 font-medium underline underline-offset-2 transition-colors"
+                          >
+                            Sign up
+                          </button>
+                        </p>
+                      </div>
                     </div>
                     
                     <p className="text-xs text-white/40 pt-10">
@@ -837,6 +848,134 @@ export const SignInPage = ({
           
         </div>
       </div>
+      
+      {/* ── About Section ─────────────────────────────────────────────── */}
+      <section id="about" className="relative z-10 py-24 border-t border-white/10 bg-black/20">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto space-y-6">
+            <h2 className="text-3xl font-bold text-white tracking-tight">Everything you need to experience campus life</h2>
+            <p className="text-white/60 text-lg leading-relaxed">
+              gitEvent is a central hub for all activities happening around the campus.
+              Whether you're looking for tech workshops, sports tournaments, or art festivals,
+              our platform makes it incredibly simple to discover and join events.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12">
+              {/* Card 1: Student Focus */}
+              <div className="bg-transparent text-left">
+                <div className="w-20 h-20 bg-[#222222] rounded-[1.5rem] flex items-center justify-center mb-6 shadow-lg">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Cap Base */}
+                    <path d="M20 8L4 16L20 24L36 16L20 8Z" fill="#1A1A1A" stroke="#333333" strokeWidth="1.5" strokeLinejoin="round"/>
+                    {/* Cap Bottom */}
+                    <path d="M10 19.5V26C10 30 15 32 20 32C25 32 30 30 30 26V19.5" fill="#1A1A1A" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    {/* Tassel */}
+                    <path d="M20 16V22L16 28" stroke="#F5A623" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="20" cy="16" r="2" fill="#F5A623"/>
+                    <path d="M14 28L18 28L16 34L14 28Z" fill="#F5A623"/>
+                  </svg>
+                </div>
+                <h3 className="text-white text-lg font-semibold mb-3">Student Focus</h3>
+                <p className="text-[#888888] text-sm leading-relaxed">Designed specifically for the campus community, connecting students with clubs and organizations effortlessly.</p>
+              </div>
+
+              {/* Card 2: Instant Tickets */}
+              <div className="bg-transparent text-left">
+                <div className="w-20 h-20 bg-[#222222] rounded-[1.5rem] flex items-center justify-center mb-6 shadow-lg">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Ticket Body */}
+                    <rect x="4" y="12" width="32" height="16" rx="2" fill="#FF6B8B"/>
+                    {/* Edge Cutouts */}
+                    <circle cx="4" cy="20" r="3" fill="#222222"/>
+                    <circle cx="36" cy="20" r="3" fill="#222222"/>
+                    {/* Ticket Lines */}
+                    <line x1="12" y1="12" x2="12" y2="28" stroke="#222222" strokeWidth="1" strokeDasharray="2 2"/>
+                    <line x1="28" y1="12" x2="28" y2="28" stroke="#222222" strokeWidth="1" strokeDasharray="2 2"/>
+                    {/* Text / Inner Detail */}
+                    <rect x="14" y="15" width="12" height="10" rx="1" stroke="#222222" strokeWidth="1" fill="none"/>
+                    <path d="M16 18H24M16 22H24" stroke="#222222" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <h3 className="text-white text-lg font-semibold mb-3">Instant Tickets</h3>
+                <p className="text-[#888888] text-sm leading-relaxed">Register in one click and get a digital ticket with a scannable QR code delivered directly to your profile.</p>
+              </div>
+
+              {/* Card 3: Host & Manage */}
+              <div className="bg-transparent text-left">
+                <div className="w-20 h-20 bg-[#222222] rounded-[1.5rem] flex items-center justify-center mb-6 shadow-lg">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Background Grid */}
+                    <rect x="8" y="8" width="24" height="24" rx="2" fill="#FFFFFF"/>
+                    <line x1="8" y1="14" x2="32" y2="14" stroke="#E5E5E5" strokeWidth="1"/>
+                    <line x1="8" y1="20" x2="32" y2="20" stroke="#E5E5E5" strokeWidth="1"/>
+                    <line x1="8" y1="26" x2="32" y2="26" stroke="#E5E5E5" strokeWidth="1"/>
+                    
+                    {/* Bars */}
+                    <rect x="12" y="18" width="4" height="14" rx="1" fill="#00C853"/>
+                    <rect x="18" y="22" width="4" height="10" rx="1" fill="#FF3D00"/>
+                    <rect x="24" y="12" width="4" height="20" rx="1" fill="#2962FF"/>
+                  </svg>
+                </div>
+                <h3 className="text-white text-lg font-semibold mb-3">Host & Manage</h3>
+                <p className="text-[#888888] text-sm leading-relaxed">Create events, track live registrations, and manage capacity in real-time through a comprehensive dashboard.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer with Contact anchor ─────────────────────────── */}
+      <footer className="relative z-10 border-t border-white/10 mt-16">
+        <div className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-10">
+          {/* Brand */}
+          <div className="space-y-4">
+            <GitEventLogo size={28} />
+            <p className="text-white/40 text-sm leading-relaxed max-w-xs">
+              Discover, register, and host campus events — all in one place.
+            </p>
+          </div>
+
+          {/* About section link area */}
+          <div className="space-y-4">
+            <h3 className="text-white font-semibold text-sm uppercase tracking-widest">About gitEvent</h3>
+            <p className="text-white/40 text-sm leading-relaxed">
+              gitEvent is a campus events platform built for students. Browse workshops, festivals, sports events and more. Host your own events and connect with your campus community.
+            </p>
+            <ul className="space-y-2 text-sm text-white/40">
+              <li>🎓 Built for students &amp; clubs</li>
+              <li>🎟️ Instant ticket generation</li>
+              <li>📍 Location-aware event discovery</li>
+            </ul>
+          </div>
+
+          {/* Contact section anchor */}
+          <div id="contact" className="space-y-4">
+            <h3 className="text-white font-semibold text-sm uppercase tracking-widest">Contact Us</h3>
+            <ul className="space-y-3 text-sm text-white/40">
+              <li className="flex items-center gap-2">
+                <span className="text-white/60">✉</span>
+                support@gitevent.com
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-white/60">📞</span>
+                +1 (800) 123-4567
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-white/60">🕐</span>
+                Mon–Fri, 9:00 AM – 6:00 PM
+              </li>
+            </ul>
+            <div className="flex gap-3 mt-4">
+              <a href="https://github.com" target="_blank" rel="noreferrer"
+                className="px-4 py-2 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 text-xs transition-colors">GitHub</a>
+              <a href="https://twitter.com" target="_blank" rel="noreferrer"
+                className="px-4 py-2 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 text-xs transition-colors">Twitter</a>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-white/5 py-5 text-center text-white/20 text-xs">
+          © {new Date().getFullYear()} gitEvent. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 };

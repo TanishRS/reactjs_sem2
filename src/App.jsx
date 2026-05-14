@@ -16,7 +16,11 @@ import MySchedule from './pages/MySchedule';
 import MyTickets from './pages/MyTickets';
 import Admin from './pages/Admin';
 import EventForm from './pages/EventForm';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Profile from './pages/Profile';
 import { SignInPage as LandingFlow } from './components/blocks/sign-in-flow-1';
+import GlobalBackground from './components/GlobalBackground';
 
 export default function App() {
   return (
@@ -34,15 +38,20 @@ export default function App() {
 // Separating routes into a child component so the Navbar can read auth context.
 function AppRoutes() {
   const location = useLocation();
-  const isLanding = location.pathname === '/';
+  const isNoNav = location.pathname === '/' || location.pathname === '/login';
 
   return (
     <>
-      {!isLanding && <Navbar />}
-      <Routes>
+      {!isNoNav && <Navbar />}
+      {!isNoNav && <GlobalBackground />}
+      <div className={isNoNav ? '' : 'relative z-10'}>
+        <Routes>
         <Route path="/" element={<LandingFlow />} />
         <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/events/:id" element={<EventDetails />} />
 
         <Route
@@ -102,7 +111,8 @@ function AppRoutes() {
         />
 
         <Route path="*" element={<Home />} />
-      </Routes>
+        </Routes>
+      </div>
     </>
   );
 }

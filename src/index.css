@@ -149,4 +149,8 @@
     transform: translateY(-50%);
     }
   }
+  @keyframes bg-pulse {
+  0%, 100% { opacity: 0.06; }
+  50%       { opacity: 0.14; }
+  }
 }

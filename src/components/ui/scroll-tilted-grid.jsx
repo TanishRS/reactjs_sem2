@@ -3,16 +3,11 @@ import {
   motion,
   useScroll,
   useTransform,
-  useMotionTemplate,
   useReducedMotion,
   cubicBezier,
 } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-/**
- * Curated editorial portrait set used as the default `images` for {@link ScrollTiltedGrid}.
- * Hosted on Pinterest's CDN — fine for demos and prototypes; swap to your own assets in production.
- */
 export const DEFAULT_GRID_IMAGES = [
   "https://i.pinimg.com/736x/de/0f/9c/de0f9c57bf7ae1c48ea467ffe9817fdc.jpg",
   "https://i.pinimg.com/736x/80/17/36/8017367dbe52dae63b58a678018795ee.jpg",
@@ -28,12 +23,8 @@ export const DEFAULT_GRID_IMAGES = [
   "https://i.pinimg.com/736x/2d/0b/74/2d0b74227b38d56fcc8b9f4872addcfc.jpg",
 ];
 
-const easeIntoFocus = cubicBezier(0.22, 1, 0.36, 1);
-const easeOutOfFocus = cubicBezier(0, 0, 0.58, 1);
-const focusEase = [
-  easeIntoFocus,
-  easeOutOfFocus,
-];
+// Smooth easing — avoids the janky linear default
+const ease = cubicBezier(0.22, 1, 0.36, 1);
 
 const MAX_WIDTH_CLASS = {
   sm: "max-w-sm",
@@ -54,12 +45,10 @@ const GAP_CLASS = {
   14: "gap-14",
 };
 
-function Tile({
-  item,
-  side,
-  config
-}) {
+function Tile({ item, side, config }) {
   const ref = useRef(null);
+
+  // Observe scroll progress relative to this tile only
   const { scrollYProgress: p } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
@@ -67,38 +56,31 @@ function Tile({
 
   const reduce = useReducedMotion();
   const sign = side === "L" ? -1 : 1;
-  const { aspectRatio, perspective, maxTilt, maxBlur, rounded } = config;
+  const { aspectRatio, perspective, maxTilt, rounded } = config;
 
-  const blur     = useTransform(p, [0, 0.5, 1], [maxBlur, 0, maxBlur], { ease: focusEase });
-  const bright   = useTransform(p, [0, 0.5, 1], [0, 1, 0], { ease: focusEase });
-  const contrast = useTransform(p, [0, 0.5, 1], [4, 1, 4], { ease: focusEase });
-
-  const ty = useTransform(p, [0, 0.5, 1], ["20%", "0%", "-20%"], { ease: focusEase });
-  const tz = useTransform(p, [0, 0.5, 1], [300, 0, 300], { ease: focusEase });
-  const rx = useTransform(p, [0, 0.5, 1], [maxTilt, 0, -maxTilt], { ease: focusEase });
-
+  // ── Keep only GPU-composited transforms (no filter/blur/contrast) ──────────
+  // translateY: card drifts up as it scrolls into view
+  const ty = useTransform(p, [0, 0.5, 1], ["18%", "0%", "-18%"], { ease });
+  // rotateX: the "tilt forward / settle / tilt back" effect
+  const rx = useTransform(p, [0, 0.5, 1], [maxTilt * 0.6, 0, -maxTilt * 0.6], { ease });
+  // slight horizontal drift per column
   const tx = useTransform(
     p,
     [0, 0.5, 1],
-    [`${sign * 15}%`, "0%", `${sign * 15}%`],
-    { ease: focusEase }
+    [`${sign * 10}%`, "0%", `${sign * 10}%`],
+    { ease }
   );
-  const rot = useTransform(p, [0, 0.5, 1], [-sign * 5, 0, sign * 5], { ease: focusEase });
-  const sk  = useTransform(p, [0, 0.5, 1], [sign * 20, 0, -sign * 20], { ease: focusEase });
-
-  const innerSY = useTransform(p, [0, 0.5, 1], [1.8, 1, 1.8], { ease: focusEase });
-
-  const filter = useMotionTemplate`blur(${blur}px) brightness(${bright}) contrast(${contrast})`;
+  // opacity: fade in from edges
+  const opacity = useTransform(p, [0, 0.25, 0.75, 1], [0, 1, 1, 0], { ease });
 
   if (reduce) {
     return (
       <figure ref={ref} className="relative z-10 m-0">
         <div
-          className="relative w-full h-full overflow-hidden"
-          style={{ aspectRatio, borderRadius: rounded }}>
-          <div className="absolute inset-0">
-            {item}
-          </div>
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio, borderRadius: rounded }}
+        >
+          <div className="absolute inset-0">{item}</div>
         </div>
       </figure>
     );
@@ -108,35 +90,33 @@ function Tile({
     <motion.figure
       ref={ref}
       className="relative z-10 m-0"
-      style={{ perspective, willChange: "transform" }}>
-        <motion.div
-        className="relative w-full h-full overflow-hidden will-change-transform"
+      // perspective on the parent enables the rotateX 3-D effect
+      style={{ perspective }}
+    >
+      <motion.div
+        className="relative w-full overflow-hidden"
         style={{
           aspectRatio,
           borderRadius: rounded,
+          // Keep all motion on compositor-only properties
           x: tx,
           y: ty,
-          z: tz,
-          rotate: rot,
           rotateX: rx,
-          skewX: sk,
-        }}>
-        <motion.div
-          className="absolute inset-0 will-change-transform"
-          style={{
-            backfaceVisibility: "hidden",
-          }}>
-          {item}
-        </motion.div>
+          opacity,
+          // Promote to its own GPU layer — prevents layout thrash
+          willChange: "transform, opacity",
+          transform: "translateZ(0)",
+        }}
+      >
+        {item}
       </motion.div>
     </motion.figure>
   );
 }
 
 /**
- * Editorial scroll-tilted image grid. Pairs of images rise from below tipped
- * forward, settle into a clean focus, then tilt back over the top edge as they
- * exit. Optionally loops infinitely via an IntersectionObserver-driven append.
+ * Editorial scroll-tilted grid. Cards tilt in from below,
+ * settle into focus, then tilt out above — silky smooth.
  */
 export function ScrollTiltedGrid({
   images = DEFAULT_GRID_IMAGES,
@@ -146,10 +126,10 @@ export function ScrollTiltedGrid({
   maxWidth = "lg",
   gap = 10,
   perspective = 900,
-  maxTilt = 70,
-  maxBlur = 8,
+  maxTilt = 50,      // reduced from 70 — less extreme = smoother
+  maxBlur = 0,       // kept in signature for API compat; no longer used
   rounded = "0.375rem",
-  className
+  className,
 } = {}) {
   const [cycles, setCycles] = useState(loop ? initialCycles : 1);
   const sentinelRef = useRef(null);
@@ -158,23 +138,24 @@ export function ScrollTiltedGrid({
     if (!loop) return;
     const el = sentinelRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
-        setCycles((c) => c + 2);
-      }
-    }, { rootMargin: "1500px 0px 1500px 0px" });
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setCycles((c) => c + 2);
+      },
+      { rootMargin: "1500px 0px 1500px 0px" }
+    );
     obs.observe(el);
     return () => obs.disconnect();
   }, [loop]);
 
-  const items = useMemo(() =>
-    loop
-      ? Array.from({ length: cycles }, () => images).flat()
-      : [...images], [loop, cycles, images]);
+  const items = useMemo(
+    () => (loop ? Array.from({ length: cycles }, () => images).flat() : [...images]),
+    [loop, cycles, images]
+  );
 
   const config = useMemo(
-    () => ({ aspectRatio, perspective, maxTilt, maxBlur, rounded }),
-    [aspectRatio, perspective, maxTilt, maxBlur, rounded]
+    () => ({ aspectRatio, perspective, maxTilt, rounded }),
+    [aspectRatio, perspective, maxTilt, rounded]
   );
 
   const gridClass = [
@@ -193,12 +174,11 @@ export function ScrollTiltedGrid({
             key={`${i}`}
             item={item}
             side={i % 2 === 0 ? "L" : "R"}
-            config={config} />
+            config={config}
+          />
         ))}
       </div>
-      {loop ? (
-        <div ref={sentinelRef} aria-hidden className="h-px w-full" />
-      ) : null}
+      {loop ? <div ref={sentinelRef} aria-hidden className="h-px w-full" /> : null}
     </section>
   );
 }

@@ -17,8 +17,8 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  function login(name, role) {
-    const userData = { name, role, id: `user-${Date.now()}` };
+  function login(name, role, extra = {}) {
+    const userData = { name, role, id: `user-${Date.now()}`, ...extra };
     setUser(userData);
     setItem(KEYS.AUTH, userData);
   }

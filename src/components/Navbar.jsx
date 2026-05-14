@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Bell, Search, Calendar, LogOut, LogIn, BookOpen, Ticket, Menu, Users 
+  Bell, Search, LogOut, LogIn, BookOpen, Ticket, Menu, Users, User, Compass
 } from 'lucide-react';
+import GitEventLogo from './GitEventLogo';
 
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -97,7 +98,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="sticky top-6 z-50 w-[calc(100%-2rem)] max-w-7xl mx-auto bg-[#1f1f1f57] backdrop-blur-xl border border-[#333] rounded-full shadow-sm mb-6">
+    <nav className="sticky top-6 z-50 w-[calc(100%-2rem)] max-w-7xl mx-auto bg-black/70 backdrop-blur-xl border border-white/10 rounded-full shadow-sm mb-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           
@@ -114,13 +115,16 @@ export default function Navbar() {
                 <ScrollArea className="h-full py-6">
                   <div className="px-6 py-2">
                     <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 mb-8">
-                      <div className="w-8 h-8 bg-zinc-600 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-white" />
-                      </div>
-                      <span className="font-bold text-white text-lg">CampusEvent</span>
+                      <GitEventLogo size={28} />
                     </Link>
                     
                     <div className="space-y-1">
+                      <Button variant="ghost" className="w-full justify-start text-slate-300" asChild onClick={() => setMobileMenuOpen(false)}>
+                        <Link to="/home">
+                          <Compass className="mr-2 h-4 w-4" />
+                          Discover
+                        </Link>
+                      </Button>
                       {isLoggedIn && (
                         <>
                           <Button variant="ghost" className="w-full justify-start text-slate-300" asChild onClick={() => setMobileMenuOpen(false)}>
@@ -150,19 +154,23 @@ export default function Navbar() {
             </Sheet>
 
             <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-8 h-8 bg-zinc-600 rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-white text-lg hidden sm:block">CampusEvent</span>
+              <GitEventLogo size={32} />
             </Link>
           </div>
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex flex-1 items-center justify-center">
-            {isLoggedIn && (
-              <NavigationMenu>
-                <NavigationMenuList>
-                  <NavigationMenuItem>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <Link to="/home" className={navigationMenuTriggerStyle()}>
+                    <Compass className="w-4 h-4 mr-2" />
+                    Discover
+                  </Link>
+                </NavigationMenuItem>
+                {isLoggedIn && (
+                  <>
+                    <NavigationMenuItem>
                     <Link to="/my-schedule" className={navigationMenuTriggerStyle()}>
                       <BookOpen className="w-4 h-4 mr-2" />
                       Schedule
@@ -180,9 +188,10 @@ export default function Navbar() {
                       Hosted Events
                     </Link>
                   </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-            )}
+                  </>
+                )}
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
 
           {/* Right side: Search + Notifications + Profile */}
@@ -190,11 +199,11 @@ export default function Navbar() {
             
             {/* Search */}
             <div className="hidden sm:block relative max-w-sm w-full md:w-64 lg:w-80" ref={searchRef}>
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
               <Input
                 type="search"
                 placeholder="Search events..."
-                className="pl-9 bg-muted/50 border-border h-9"
+                className="pl-9 bg-black/60 border-white/10 text-white placeholder:text-zinc-600 h-9 rounded-full focus:border-white/30 focus:ring-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
@@ -279,9 +288,12 @@ export default function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-1">
-                    <Avatar className="h-8 w-8 border border-border">
-                      <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=52525b&color=fff`} alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    <Avatar className="h-8 w-8 border border-white/20">
+                      <AvatarImage
+                        src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=18181b&color=fff`}
+                        alt={user.name}
+                      />
+                      <AvatarFallback className="bg-zinc-800 text-white">{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -294,6 +306,13 @@ export default function Navbar() {
                       </p>
                     </div>
                   </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Edit Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/my-schedule" className="cursor-pointer">
