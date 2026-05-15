@@ -37,7 +37,7 @@ A modern, responsive React application built with Vite and Tailwind CSS for mana
 
 ### Installation
 
-1. Clone the repository and navigate to the project folder:
+1. Clone the repository and navigate to the project folder: (CLONE THE "ui_ux" branch)
    ```bash
    cd reactjs_sem2-main
    ```
